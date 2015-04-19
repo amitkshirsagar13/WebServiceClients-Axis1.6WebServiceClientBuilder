@@ -1,0 +1,139 @@
+<project name="axis2.webservices" basedir=".." default="build-client-with-class">
+	<property environment="env" />
+	<property name="webclient" value="axis2"/>
+	<property name="src" value="${basedir}/src" />
+	<property name="resources" value="${basedir}/resources" />
+	<property name="classes" value="${basedir}/classes" />
+	<property name="jars" value="${basedir}/jars" />
+	<property name="wsdl-resources" value="${basedir}/wsdl" />
+	
+	<property name="package" value="axis2.com.cdyne.ws.weatherws" />
+	<property name="wsdl" value="Weather.wsdl"/>
+
+	<property name="axis2.home" value="C:/Development/axis2" />
+
+	<path id="axis2.classpath">
+		<fileset dir="${axis2.home}/lib">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+
+	<target name="eclipse-refresh" if="eclipse.running" description="Refreshes Eclipse project when run inside the Eclipse workspace JRE">
+		<echo message="Refreshing eclipse..." />
+		<eclipse.refreshLocal resource="${basedir}" depth="infinite" />
+	</target>
+
+	<target name="clean-classes" description="Cleans all java classes in all java modules">
+		<echo message="Deleting scrap classes files" />
+		<delete quiet="false" includeEmptyDirs="true">
+			<fileset dir="${classes}" includes="**" />
+		</delete>
+		<mkdir dir="${classes}"/>
+	</target>
+	
+	<target name="clean-src" description="Cleans all java classes in all java modules">
+		<echo message="Deleting scrap files from src" />
+		<delete quiet="false" includeEmptyDirs="true">
+			<fileset dir="${src}" includes="**" />
+			<fileset dir="${resources}" includes="**" />
+		</delete>
+		<mkdir dir="${src}"/>
+		<mkdir dir="${resources}"/>
+	</target>
+
+	<target name="clean-all" description="Cleans all java classes in all java modules">
+		<echo message="Deleting scrap files" />
+		<antcall target="clean-src" />
+		<antcall target="clean-classes" />
+		<antcall target="eclipse-refresh" />
+	</target>
+
+
+	<taskdef name="clientgen" classpathref="axis2.classpath" classname="org.apache.axis2.tool.ant.AntCodegenTask" />
+	
+		
+	<target name="build-client-with-ant-task">
+		
+		<antcall target="clean-all"/>
+		
+		<clientgen wsdlfilename="${wsdl-resources}/${wsdl}" 
+			output="${src}/.." 
+			serverside="false" 
+			packageName="${package}" 
+			backwardcompatible="true" skipbuildxml="true" unpackclasses="true" suppressprefixes="true" overwrite="true"
+			synconly="true" 
+			databindingname="xmlbeans">
+			<classpath>
+				<pathelement location="${src}" />
+			</classpath>
+		</clientgen>
+
+		<antcall target="java-compile" />
+		<antcall target="eclipse-refresh" />
+		<antcall target="jar" />
+	</target>
+
+
+	<target name="java-compile">
+		<antcall target="eclipse-refresh" />
+		
+		<javac destdir="${classes}">
+			<src path="${src}" />
+			<classpath refid="axis2.classpath" />
+		</javac>		
+	</target>
+	
+	<target name="build-client-with-class">
+		<echo message="Generating Client" />
+		
+		<antcall target="clean-all" />
+			
+		<java classname="org.apache.axis2.wsdl.WSDL2Java" fork="true">
+			<classpath refid="axis2.classpath" />
+			<jvmarg value="-Dlog4j.configuration=file:///${axis2.home}/conf/log4j.properties" />
+			<arg value="--noBuildXML" />
+			<arg value="-uri" />
+			<arg file="${wsdl-resources}/${wsdl}" />
+			<arg value="-p" />
+			<arg value="${package}" />
+			<arg value="-d" />
+			<arg value="xmlbeans" />
+			<arg value="-s" />
+			<arg value="-u" />
+			<arg value="-sp" />
+			<arg value="-or" />
+			<arg value="-o" />
+			<arg value="${src}" />
+			<arg value="-S" />
+			<arg value="." />
+			<arg value="-R" />
+			<arg value="../resources" />
+		</java>
+		
+		<antcall target="java-compile" />
+		<antcall target="eclipse-refresh" />
+		<antcall target="jar" />
+	</target>
+	
+	<target name="jar">
+				<echo message="Ant: ${ant.version}" />
+				<echo message="Java: ${ant.java.version}" />
+				<echo message="JRE Name: ${java.runtime.name}" />
+				<echo message="JRE Version: ${java.runtime.version}" />
+				<echo message="Java Version: ${java.version}" />
+
+				<antcall target="eclipse-refresh" />
+				<jar destfile="jars/WeatherServiceAxis1.6.jar">
+					<fileset dir="${classes}" />
+					<fileset dir="${src}" />
+					<fileset dir="${resources}" />
+					<manifest>
+						<attribute name="Manifest-Version" value="1.0" />
+						<attribute name="Created-By" value="${java.runtime.version}" />
+						<attribute name="Ant-Version" value="${ant.version}" />
+						<attribute name="WebServiceClient" value="${webclient}" />
+											
+					</manifest>
+				</jar>
+			</target>
+</project>
